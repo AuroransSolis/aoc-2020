@@ -10,3 +10,21 @@ edition = "2018"
 anyhow = "1.0.34"
 aoc-runner = "0.3.0"
 aoc-runner-derive = "0.3.0"
+
+[profile.release]
+opt-level = 3
+debug = false
+lto = true
+debug-assertions = false
+codegen-units = 1
+incremental = false
+overflow-checks = false
+
+[profile.bench]
+opt-level = 3
+debug = false
+lto = true
+debug-assertions = false
+codegen-units = 1
+incremental = false
+overflow-checks = false
