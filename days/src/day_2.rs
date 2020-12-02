@@ -1,39 +1,36 @@
-use aoc_runner_derive::{aoc, aoc_generator};
+use aoc_runner_derive::aoc;
+
+fn get_parts(line: &str) -> ([usize; 2], char, &str) {
+    let mut sections = line.split_whitespace();
+    let mut range_parts = sections.next().unwrap().split('-');
+    let min = range_parts.next().unwrap().parse().unwrap();
+    let max = range_parts.next().unwrap().parse().unwrap();
+    let test_char = sections.next().unwrap().chars().next().unwrap();
+    let password = sections.next().unwrap();
+    ([min, max], test_char, password)
+}
 
 #[aoc(day2, part1)]
 pub fn part1(input: &str) -> usize {
-    let mut count = 0;
-    for line in input.lines() {
-        let sections = line.split_whitespace().collect::<Vec<_>>();
-        let counts = sections[0].split('-').collect::<Vec<_>>();
-        let min = counts[0].parse::<usize>().unwrap();
-        let max = counts[1].parse::<usize>().unwrap();
-        let letter = sections[1].split(':').next().unwrap();
-        let test_char = letter.chars().next().unwrap();
-        let letter_count = sections[2].chars().filter(|&c| c == test_char).count();
-        if letter_count >= min && letter_count <= max {
-            count += 1;
-        }
-    }
-    count
+    input
+        .lines()
+        .filter(|line| {
+            let ([min, max], test_char, password) = get_parts(line);
+            let count = password.chars().filter(|&c| c == test_char).count();
+            count >= min && count <= max
+        })
+        .count()
 }
 
 #[aoc(day2, part2)]
 pub fn part2(input: &str) -> usize {
-    let mut count = 0;
-    for line in input.lines() {
-        let sections = line.split_whitespace().collect::<Vec<_>>();
-        let counts = sections[0].split('-').collect::<Vec<_>>();
-        let min = counts[0].parse::<usize>().unwrap();
-        let max = counts[1].parse::<usize>().unwrap();
-        let letter = sections[1].split(':').next().unwrap();
-        let test_char = letter.chars().next().unwrap();
-        let chars = sections[2].chars().collect::<Vec<char>>();
-        let cond_1 = chars[min - 1] == test_char;
-        let cond_2 = chars[max - 1] == test_char;
-        if (cond_1 && !cond_2) || (!cond_1 && cond_2) {
-            count += 1;
-        }
-    }
-    count
+    input
+        .lines()
+        .filter(|line| {
+            let ([loc1, loc2], test_char, password) = get_parts(line);
+            (((password.as_bytes()[loc1 - 1] == test_char as u8) as u8)
+                ^ ((password.as_bytes()[loc2 - 1] == test_char as u8) as u8))
+                > 0
+        })
+        .count()
 }
