@@ -16,7 +16,7 @@ pub fn part1(input: &str) -> usize {
         .lines()
         .filter(|line| {
             let ([min, max], test_char, password) = get_parts(line);
-            let count = password.chars().filter(|&c| c == test_char).count();
+            let count = password.as_bytes().iter().filter(|&&b| b == (test_char as u8)).count();
             count >= min && count <= max
         })
         .count()
@@ -28,9 +28,8 @@ pub fn part2(input: &str) -> usize {
         .lines()
         .filter(|line| {
             let ([loc1, loc2], test_char, password) = get_parts(line);
-            (((password.as_bytes()[loc1 - 1] == test_char as u8) as u8)
-                ^ ((password.as_bytes()[loc2 - 1] == test_char as u8) as u8))
-                > 0
+            (password.as_bytes()[loc1 - 1] == test_char as u8)
+                ^ (password.as_bytes()[loc2 - 1] == test_char as u8)
         })
         .count()
 }
