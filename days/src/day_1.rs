@@ -1,4 +1,5 @@
 use aoc_runner_derive::{aoc, aoc_generator};
+use voracious_radix_sort::RadixSort;
 
 // const TARGET_SUM: usize = 2020;
 const TARGET_SUM: usize = 99920044;
@@ -23,7 +24,28 @@ pub fn part1_for(input: &[usize]) -> usize {
     0
 }
 
-#[aoc(day1, part2, For)]
+#[aoc(day1, part1, ThreeSum)]
+pub fn part1_3sum(input: &[usize]) -> usize {
+    let mut input = input.to_vec();
+    input.voracious_sort();
+    let mut start = 0;
+    let mut end = input.len() - 1;
+    while start < end {
+        let n1 = input[start];
+        let n2 = input[end];
+        let sum = n1 + n2;
+        if sum == TARGET_SUM {
+            return n1 * n2;
+        } else if sum > TARGET_SUM {
+            end -= 1;
+        } else {
+            start += 1;
+        }
+    }
+    0
+}
+
+/*#[aoc(day1, part2, For)]
 pub fn part2_for(input: &[usize]) -> usize {
     for i in 0..input.len() - 2 {
         for j in (i + 1..input.len() - 1).filter(|&j| input[i] + input[j] < TARGET_SUM) {
@@ -35,64 +57,26 @@ pub fn part2_for(input: &[usize]) -> usize {
         }
     }
     0
-}
+}*/
 
-use std::collections::HashSet;
-
-#[aoc(day1, part1, HashSet)]
-pub fn part1_hashset(input: &[usize]) -> usize {
-    let mut map = HashSet::with_capacity(input.len());
-    let mut max = input[0];
-    let mut min = max;
-    for val in input.iter().copied() {
-        map.insert(val);
-        if val > max {
-            max = val;
-        } else if val < min {
-            min = val;
-        }
-    }
-    for (n1, diff) in map
-        .iter()
-        .copied()
-        .map(|n1| (n1, TARGET_SUM - n1))
-        .filter(|&(_, diff)| diff >= min && diff <= max)
-    {
-        if map.contains(&diff) {
-            return n1 * diff;
-        }
-    }
-    0
-}
-
-#[aoc(day1, part2, HashSet)]
-pub fn part2_hashset(input: &[usize]) -> u128 {
-    let mut map = HashSet::with_capacity(input.len());
-    let mut max = input[0];
-    let mut min = max;
-    for val in input.iter().copied() {
-        map.insert(val);
-        if val > max {
-            max = val;
-        } else if val < min {
-            min = val;
-        }
-    }
-    for (n1, diff1) in map
-        .iter()
-        .copied()
-        .map(|n1| (n1, TARGET_SUM - n1))
-        .filter(|&(_, diff1)| diff1 >= min && diff1 <= max)
-    {
-        for (_, diff2, prod) in map
-            .iter()
-            .copied()
-            .filter(|&n2| n1 != n2)
-            .map(|n2| (n2, diff1 - n2, n1 * n2))
-            .filter(|&(n2, diff2, _)| diff2 >= min && diff2 <= max && diff2 != n1 && diff2 != n2)
-        {
-            if map.contains(&diff2) {
-                return diff2 as u128 * prod as u128;
+#[aoc(day1, part2, ThreeSum)]
+pub fn part2_3sum(input: &[usize]) -> u128 {
+    let mut input = input.to_vec();
+    input.voracious_sort();
+    for i in 0..input.len() - 2 {
+        let n1 = input[i];
+        let mut start = i + 1;
+        let mut end = input.len() - 1;
+        while start < end {
+            let n2 = input[start];
+            let n3 = input[end];
+            let sum = n1 + n2 + n3;
+            if sum == TARGET_SUM {
+                return n1 as u128 * n2 as u128 * n3 as u128;
+            } else if sum > TARGET_SUM {
+                end -= 1;
+            } else {
+                start += 1;
             }
         }
     }

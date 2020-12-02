@@ -10,6 +10,7 @@ edition = "2018"
 anyhow = "1.0.34"
 aoc-runner = "0.3.0"
 aoc-runner-derive = "0.3.0"
+voracious_radix_sort = "1.1.0"
 
 [profile.release]
 opt-level = 3
