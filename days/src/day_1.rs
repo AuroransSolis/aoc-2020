@@ -1,15 +1,17 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 use voracious_radix_sort::RadixSort;
 
-// const TARGET_SUM: usize = 2020;
-const TARGET_SUM: usize = 99920044;
+const TARGET_SUM: usize = 2020;
+// const TARGET_SUM: usize = 99920044;
 
 #[aoc_generator(day1)]
 pub fn input_generator(input: &str) -> Vec<usize> {
-    input
+    let mut input = input
         .lines()
         .map(|line| line.parse::<usize>().unwrap())
-        .collect::<Vec<_>>()
+        .collect::<Vec<_>>();
+    input.voracious_sort();
+    input
 }
 
 #[aoc(day1, part1, For)]
@@ -26,8 +28,6 @@ pub fn part1_for(input: &[usize]) -> usize {
 
 #[aoc(day1, part1, ThreeSum)]
 pub fn part1_3sum(input: &[usize]) -> usize {
-    let mut input = input.to_vec();
-    input.voracious_sort();
     let mut start = 0;
     let mut end = input.len() - 1;
     while start < end {
@@ -61,8 +61,6 @@ pub fn part2_for(input: &[usize]) -> usize {
 
 #[aoc(day1, part2, ThreeSum)]
 pub fn part2_3sum(input: &[usize]) -> u128 {
-    let mut input = input.to_vec();
-    input.voracious_sort();
     for i in 0..input.len() - 2 {
         let n1 = input[i];
         let mut start = i + 1;
