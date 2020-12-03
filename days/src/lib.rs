@@ -1,3 +1,7 @@
+#![cfg_attr(nightly, allow(incomplete_features))]
+#![cfg_attr(nightly, feature(const_generics))]
+#![cfg_attr(nightly, feature(const_evaluatable_checked))]
+
 pub mod day_1;
 pub mod day_10;
 pub mod day_11;
