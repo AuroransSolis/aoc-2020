@@ -1,52 +1,30 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 
-#[aoc(day3, part1)]
-pub fn part1(input: &str) -> usize {
-    let grid = input
+#[aoc_generator(day3)]
+pub fn input_generator(input: &str) -> Vec<Vec<bool>> {
+    input
         .lines()
-        .map(|line| line.chars().collect::<Vec<char>>())
-        .collect::<Vec<_>>();
-    let width = grid[0].len();
-    let mut x = 0;
-    let mut y = 0;
-    let mut count = 0;
-    while y < grid.len() {
-        if grid[y][x % width] == '#' {
-            count += 1;
-        }
-        y += 1;
-        x += 3;
-    }
-    count
+        .map(|line| line.bytes().map(|byte| byte == b'#').collect::<Vec<_>>())
+        .collect::<Vec<_>>()
+}
+
+fn count_trees(input: &[Vec<bool>], dy: usize, dx: usize) -> usize {
+    (1..)
+        .map(|mul| (mul * dy, mul * dx))
+        .take_while(|&(y, _)| y < input.len())
+        .filter(|&(y, x)| unsafe { *input.get_unchecked(y).get_unchecked(x % input[0].len()) })
+        .count()
+}
+
+#[aoc(day3, part1)]
+pub fn part1(input: &[Vec<bool>]) -> usize {
+    count_trees(input, 1, 1)
 }
 
 #[aoc(day3, part2)]
-pub fn part2(input: &str) -> usize {
-    let grid = input
-        .lines()
-        .map(|line| line.chars().collect::<Vec<char>>())
-        .collect::<Vec<_>>();
-    let width = grid[0].len();
-    let mut total = 1;
-    let slopes = [
-        (1, 1),
-        (3, 1),
-        (5, 1),
-        (7, 1),
-        (1, 2),
-    ];
-    for (dx, dy) in slopes.iter().copied() {
-        let mut x = 0;
-        let mut y = 0;
-        let mut count = 0;
-        while y < grid.len() {
-            if grid[y][x % width] == '#' {
-                count += 1;
-            }
-            x += dx;
-            y += dy;
-        }
-        total *= count;
-    }
-    total
+pub fn part2(input: &[Vec<bool>]) -> usize {
+    [(1, 1), (1, 3), (1, 5), (1, 7), (2, 1)]
+        .iter()
+        .map(|&(dy, dx)| count_trees(input, dy, dx))
+        .product()
 }
