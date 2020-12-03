@@ -12,7 +12,7 @@ fn count_trees(input: &[Vec<bool>], dy: usize, dx: usize) -> usize {
     (1..)
         .map(|mul| (mul * dy, mul * dx))
         .take_while(|&(y, _)| y < input.len())
-        .filter(|&(y, x)| unsafe { *input.get_unchecked(y).get_unchecked(x % input[0].len()) })
+        .filter(|&(y, x)| input[y][x % input[0].len()])
         .count()
 }
 
