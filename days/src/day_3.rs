@@ -49,7 +49,7 @@ const LARGE_DYS: [usize; 15] = [1, 5, 7, 11, 13, 17, 19, 23, 25, 29, 31, 35, 37,
 
 #[cfg(not(nightly))]
 #[aoc(day3, part2, Large)]
-pub fn part2_lg(((height, width), input): &((usize, usize), Vec<bool>)) -> BigUint {
+pub fn part2_lg((width, input): &(usize, Vec<bool>)) -> BigUint {
     LARGE_DYS
         .iter()
         .flat_map(|dy| LARGE_DXS.iter().map(move |dx| (dy, dx)))
