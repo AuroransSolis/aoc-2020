@@ -1,43 +1,44 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 
 #[aoc_generator(day3)]
-pub fn input_generator(input: &str) -> ((usize, usize), Vec<bool>) {
+pub fn input_generator(input: &str) -> (usize, Vec<bool>) {
     let mut lines = input.lines();
     let first = lines.next().unwrap();
     let width = first.len();
     let mut bools = first.bytes().map(|byte| byte == b'#').collect::<Vec<_>>();
-    let mut height = 1;
-    input
-        .lines()
-        .map(|line| {
-            height += 1;
-            line
-        })
+    lines
         .flat_map(|line| line.bytes().map(|byte| byte == b'#'))
         .for_each(|b| {
             bools.push(b);
         });
-    ((height, width), bools)
+    (width, bools)
 }
 
-fn count_trees(input: &[bool], height: usize, width: usize, dy: usize, dx: usize) -> usize {
+fn count_trees(input: &[bool], width: usize, dy: usize, dx: usize) -> usize {
+    let mut x = 0;
     (1..)
-        .map(|mul| (mul * dy, mul * dx))
-        .take_while(|&(y, _)| y < height)
-        .filter(|&(y, x)| input[(y * width) + (x % width)])
+        .map(|mul| {
+            x += dx;
+            if x >= width {
+                x -= width;
+            }
+            mul * dy * width + x
+        })
+        .take_while(|&offset| offset < input.len())
+        .filter(|&offset| input[offset])
         .count()
 }
 
 #[aoc(day3, part1)]
-pub fn part1(((height, width), input): &((usize, usize), Vec<bool>)) -> usize {
-    count_trees(input, *height, *width, 1, 1)
+pub fn part1((width, input): &(usize, Vec<bool>)) -> usize {
+    count_trees(input, *width, 1, 3)
 }
 
 #[aoc(day3, part2, Regular)]
-pub fn part2_reg(((height, width), input): &((usize, usize), Vec<bool>)) -> usize {
+pub fn part2_reg((width, input): &(usize, Vec<bool>)) -> usize {
     [(1, 1), (1, 3), (1, 5), (1, 7), (2, 1)]
         .iter()
-        .map(|&(dy, dx)| count_trees(input, *height, *width, dy, dx))
+        .map(|&(dy, dx)| count_trees(input, *width, dy, dx))
         .product()
 }
 
@@ -52,7 +53,7 @@ pub fn part2_lg(((height, width), input): &((usize, usize), Vec<bool>)) -> BigUi
     LARGE_DYS
         .iter()
         .flat_map(|dy| LARGE_DXS.iter().map(move |dx| (dy, dx)))
-        .map(|(dy, dx)| count_trees(input, *height, *width, *dy, *dx))
+        .map(|(dy, dx)| count_trees(input, *width, *dy, *dx))
         .fold(BigUint::from(1usize), |acc, count| acc * count)
 }
 
@@ -81,9 +82,9 @@ const LARGE_SLOPES: [(usize, usize); LARGE_DXS.len() * LARGE_DYS.len()] =
 
 #[cfg(nightly)]
 #[aoc(day3, part2, Large)]
-pub fn part2_lg(((height, width), input): &((usize, usize), Vec<bool>)) -> BigUint {
+pub fn part2_lg((width, input): &(usize, Vec<bool>)) -> BigUint {
     LARGE_SLOPES
         .iter()
-        .map(|&(dy, dx)| count_trees(input, *height, *width, dy, dx))
+        .map(|&(dy, dx)| count_trees(input, *width, dy, dx))
         .fold(BigUint::from(1usize), |acc, count| acc * count)
 }
