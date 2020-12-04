@@ -1,101 +1,113 @@
-use aoc_runner_derive::{aoc, aoc_generator};
-use std::collections::HashSet;
+use aoc_runner_derive::aoc;
+use std::str::FromStr;
 
-const PASSPORT_FIELDS_P1: &[&str] = &["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"];
+#[derive(Clone, Copy, Debug)]
+#[repr(u8)]
+enum Key {
+    BirthYear = 1 << 0,
+    IssueYear = 1 << 1,
+    ExpirationYear = 1 << 2,
+    Height = 1 << 3,
+    HairColour = 1 << 4,
+    EyeColour = 1 << 5,
+    PassportId = 1 << 6,
+    CountryId = 1 << 7,
+}
+
+const MASK: usize = 0b1111111;
+
+impl FromStr for Key {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "byr" => Ok(Key::BirthYear),
+            "iyr" => Ok(Key::IssueYear),
+            "eyr" => Ok(Key::ExpirationYear),
+            "hgt" => Ok(Key::Height),
+            "hcl" => Ok(Key::HairColour),
+            "ecl" => Ok(Key::EyeColour),
+            "pid" => Ok(Key::PassportId),
+            "cid" => Ok(Key::CountryId),
+            _ => Err(format!("unknown key: '{}'", s)),
+        }
+    }
+}
 
 #[aoc(day4, part1)]
 pub fn part1(input: &str) -> usize {
-    let mut fields = HashSet::new();
+    let mut fields = 0;
     let mut count = 0;
-    for line in input.lines() {
-        if line == "" {
-            if PASSPORT_FIELDS_P1
-                .iter()
-                .copied()
-                .all(|field| fields.contains(field))
-            {
+    input.lines().for_each(|line| {
+        if !line.is_empty() {
+            line.split_whitespace().for_each(|section| {
+                fields |= section.split(':').next().unwrap().parse::<Key>().unwrap() as usize
+            })
+        } else {
+            if fields & MASK == MASK {
                 count += 1;
             }
-            fields.clear();
-        } else {
-            for section in line.split_whitespace() {
-                let field = section.split(':').next().unwrap();
-                fields.insert(field);
-            }
+            fields = 0;
         }
-    }
-    if PASSPORT_FIELDS_P1
-        .iter()
-        .copied()
-        .all(|field| fields.contains(field))
-    {
+    });
+    if fields & MASK == MASK {
         count += 1;
     }
     count
 }
 
-fn check_field(field: &str, value: &str) -> bool {
-    match field {
-        "byr" => (1920..=2002).contains(&value.parse::<usize>().unwrap_or(0)),
-        "iyr" => (2010..=2020).contains(&value.parse::<usize>().unwrap_or(0)),
-        "eyr" => (2020..=2030).contains(&value.parse::<usize>().unwrap_or(0)),
-        "hgt" => {
-            if value.ends_with("cm") {
-                (150..=193).contains(&value.trim_end_matches("cm").parse::<usize>().unwrap_or(0))
-            } else if value.ends_with("in") {
-                (59..=76).contains(&value.trim_end_matches("in").parse::<usize>().unwrap_or(0))
-            } else {
-                false
+fn val_in_range(lo: usize, hi: usize, s: &str) -> bool {
+    s.parse::<usize>()
+        .map(|val| (lo..=hi).contains(&val))
+        .unwrap_or(false)
+}
+
+impl Key {
+    fn valid_value(&self, value: &str) -> bool {
+        match self {
+            Key::BirthYear => val_in_range(1920, 2002, value),
+            Key::IssueYear => val_in_range(2010, 2020, value),
+            Key::ExpirationYear => val_in_range(2020, 2030, value),
+            Key::Height => {
+                if value.ends_with("cm") {
+                    val_in_range(150, 193, value.trim_end_matches("cm"))
+                } else if value.ends_with("in") {
+                    val_in_range(59, 76, value.trim_end_matches("in"))
+                } else {
+                    false
+                }
             }
+            Key::HairColour => {
+                if value.starts_with('#') {
+                    let trimmed = value.trim_start_matches('#');
+                    trimmed.len() == 6 && trimmed.chars().all(|c| c.is_digit(16))
+                } else {
+                    false
+                }
+            }
+            Key::EyeColour => ["amb", "blu", "brn", "gry", "grn", "hzl", "oth"].contains(&value),
+            Key::PassportId => value.len() == 9 && value.chars().all(|c| c.is_digit(10)),
+            Key::CountryId => true,
         }
-        "hcl" => {
-            value.starts_with('#')
-                && value.trim_start_matches('#').len() == 6
-                && value.chars().skip(1).all(|c| c.is_digit(16))
-        }
-        "ecl" => ["amb", "blu", "brn", "gry", "grn", "hzl", "oth"].contains(&value),
-        "pid" => value.len() == 9 && value.chars().all(|c| c.is_digit(10)),
-        "cid" => true,
-        _ => false,
     }
 }
 
 #[aoc(day4, part2)]
 pub fn part2(input: &str) -> usize {
-    let mut fields = HashSet::new();
-    let mut count = 0;
-    let mut early_exit = false;
-    for line in input.lines() {
-        if line == "" {
-            if !early_exit
-                && PASSPORT_FIELDS_P1
-                    .iter()
-                    .copied()
-                    .all(|field| fields.contains(field))
-            {
-                count += 1;
-            }
-            fields.clear();
-            early_exit = false;
-        } else if !early_exit {
-            for section in line.split_whitespace() {
-                let mut kv = section.split(':');
-                let key = kv.next().unwrap();
-                let val = kv.next().unwrap();
-                if check_field(key, val) {
-                    fields.insert(key);
-                } else {
-                    early_exit = true;
-                }
-            }
-        }
-    }
-    if PASSPORT_FIELDS_P1
-        .iter()
-        .copied()
-        .all(|field| fields.contains(field))
-    {
-        count += 1;
-    }
-    count
+    input
+        .split("\n\n")
+        .map(|passport| {
+            passport
+                .lines()
+                .flat_map(|line| line.split_whitespace())
+                .map(|section| {
+                    let mut kv = section.split(':');
+                    let key = kv.next().unwrap().parse::<Key>().unwrap();
+                    (key, key.valid_value(kv.next().unwrap()))
+                })
+                .take_while(|&(_, valid)| valid)
+                .fold(0, |fields, (field, _)| fields | field as usize)
+        })
+        .filter(|&fields| fields & MASK == MASK)
+        .count()
 }
