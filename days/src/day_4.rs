@@ -69,10 +69,17 @@ impl Key {
             Key::IssueYear => val_in_range(2010, 2020, value),
             Key::ExpirationYear => val_in_range(2020, 2030, value),
             Key::Height => {
-                if value.ends_with("cm") {
-                    val_in_range(150, 193, value.trim_end_matches("cm"))
-                } else if value.ends_with("in") {
-                    val_in_range(59, 76, value.trim_end_matches("in"))
+                if value.len() > 3 {
+                    let (value, units) = value.split_at(value.len() - 2);
+                    if units == "cm" || units == "in" {
+                        if units == "cm" {
+                            val_in_range(150, 193, value.trim_end_matches("cm"))
+                        } else {
+                            val_in_range(59, 76, value.trim_end_matches("in"))
+                        }
+                    } else {
+                        false
+                    }
                 } else {
                     false
                 }
