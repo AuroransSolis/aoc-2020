@@ -41,7 +41,7 @@ pub fn part1(input: &str) -> usize {
     input.lines().for_each(|line| {
         if !line.is_empty() {
             line.split_whitespace().for_each(|section| {
-                fields |= section.split(':').next().unwrap().parse::<Key>().unwrap() as usize
+                fields |= section.split_at(3).0.parse::<Key>().unwrap() as usize
             })
         } else {
             if fields & MASK == MASK {
@@ -56,44 +56,29 @@ pub fn part1(input: &str) -> usize {
     count
 }
 
-fn val_in_range(lo: usize, hi: usize, s: &str) -> bool {
-    s.parse::<usize>()
-        .map(|val| (lo..=hi).contains(&val))
-        .unwrap_or(false)
-}
-
 impl Key {
     fn valid_value(&self, value: &str) -> bool {
         match self {
-            Key::BirthYear => val_in_range(1920, 2002, value),
-            Key::IssueYear => val_in_range(2010, 2020, value),
-            Key::ExpirationYear => val_in_range(2020, 2030, value),
+            Key::BirthYear => value.len() == 4 && value >= "1920" && "2002" >= value,
+            Key::IssueYear => value.len() == 4 && value >= "2010" && "2020" >= value,
+            Key::ExpirationYear => value.len() == 4 && value >= "2020" && "2030" >= value,
             Key::Height => {
-                if value.len() > 3 {
-                    let (value, units) = value.split_at(value.len() - 2);
-                    if units == "cm" || units == "in" {
-                        if units == "cm" {
-                            val_in_range(150, 193, value.trim_end_matches("cm"))
-                        } else {
-                            val_in_range(59, 76, value.trim_end_matches("in"))
-                        }
-                    } else {
-                        false
-                    }
+                if value.len() == 4 {
+                    let (value, units) = value.split_at(2);
+                    units == "in" && value >= "59" && "76" >= value
+                } else if value.len() == 5 {
+                    let (value, units) = value.split_at(3);
+                    units == "cm" && value >= "150" && "193" >= value
                 } else {
                     false
                 }
             }
             Key::HairColour => {
-                if value.starts_with('#') {
-                    let trimmed = value.trim_start_matches('#');
-                    trimmed.len() == 6 && trimmed.chars().all(|c| c.is_digit(16))
-                } else {
-                    false
-                }
+                let (start, value) = value.split_at(1);
+                start == "#" && value.len() == 6 && value.chars().all(|c| c.is_ascii_hexdigit())
             }
             Key::EyeColour => ["amb", "blu", "brn", "gry", "grn", "hzl", "oth"].contains(&value),
-            Key::PassportId => value.len() == 9 && value.chars().all(|c| c.is_digit(10)),
+            Key::PassportId => value.len() == 9 && value.chars().all(|c| c.is_ascii_digit()),
             Key::CountryId => true,
         }
     }
@@ -106,11 +91,11 @@ pub fn part2(input: &str) -> usize {
         .map(|passport| {
             passport
                 .lines()
-                .flat_map(|line| line.split_whitespace())
+                .flat_map(|line| line.split_ascii_whitespace())
                 .map(|section| {
-                    let mut kv = section.split(':');
-                    let key = kv.next().unwrap().parse::<Key>().unwrap();
-                    (key, key.valid_value(kv.next().unwrap()))
+                    let (key, val) = section.split_at(3);
+                    let key = key.parse::<Key>().unwrap();
+                    (key, key.valid_value(val.split_at(1).1))
                 })
                 .take_while(|&(_, valid)| valid)
                 .fold(0, |fields, (field, _)| fields | field as usize)
