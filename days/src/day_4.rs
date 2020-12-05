@@ -75,10 +75,10 @@ impl Key {
             }
             Key::HairColour => {
                 let (start, value) = value.split_at(1);
-                start == "#" && value.len() == 6 && value.chars().all(|c| c.is_ascii_hexdigit())
+                start == "#" && value.len() == 6 && value.bytes().all(|c| c.is_ascii_hexdigit())
             }
             Key::EyeColour => ["amb", "blu", "brn", "gry", "grn", "hzl", "oth"].contains(&value),
-            Key::PassportId => value.len() == 9 && value.chars().all(|c| c.is_ascii_digit()),
+            Key::PassportId => value.len() == 9 && value.bytes().all(|c| c.is_ascii_digit()),
             Key::CountryId => true,
         }
     }
