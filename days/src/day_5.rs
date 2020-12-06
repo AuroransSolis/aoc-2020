@@ -39,5 +39,9 @@ pub fn part2(input: &str) -> usize {
         .inspect(|&id| flags[id] = false)
         .min()
         .unwrap();
-    flags[min..].iter().position(|&unoccupied| unoccupied).unwrap() + min
+    flags[min..]
+        .iter()
+        .position(|&unoccupied| unoccupied)
+        .unwrap()
+        + min
 }
