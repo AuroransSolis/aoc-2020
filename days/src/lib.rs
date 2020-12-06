@@ -1,6 +1,7 @@
 #![cfg_attr(nightly, allow(incomplete_features))]
 #![cfg_attr(nightly, feature(const_generics))]
 #![cfg_attr(nightly, feature(const_evaluatable_checked))]
+#![cfg_attr(nightly, feature(iterator_fold_self))]
 
 pub mod day_1;
 pub mod day_10;
