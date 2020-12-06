@@ -1,10 +1,20 @@
 use aoc_runner_derive::aoc;
 
+// Regular input
+const ROW_BITS: usize = 7;
+const COL_BITS: usize = 3;
+
+// Large input
+// const ROW_BITS: usize = 13;
+// const COL_BITS: usize = 5;
+
+const NUM_SEATS: usize = (1 << ROW_BITS) * (1 << COL_BITS);
+
 fn map_to_binary(s: &str, one: u8) -> usize {
     s.bytes()
         .rev()
         .enumerate()
-        .filter(|&(_, b)| b == one)
+        .filter(|&(_, byte)| byte == one)
         .map(|(shift, _)| 1 << shift)
         .sum::<usize>()
 }
@@ -13,21 +23,19 @@ fn map_to_binary(s: &str, one: u8) -> usize {
 pub fn part1(input: &str) -> usize {
     input
         .lines()
-        .map(|line| line.split_at(7))
-        .map(|(row, col)| (map_to_binary(row, b'B'), map_to_binary(col, b'R')))
-        .map(|(row, col)| row * 8 + col)
+        .map(|line| line.split_at(ROW_BITS))
+        .map(|(row, col)| (map_to_binary(row, b'B') << COL_BITS) + map_to_binary(col, b'R'))
         .max()
         .unwrap()
 }
 
 #[aoc(day5, part2)]
 pub fn part2(input: &str) -> usize {
-    let mut flags = [true; (1 << 7) * (1 << 3)];
+    let mut flags = [true; NUM_SEATS];
     let min = input
         .lines()
-        .map(|line| line.split_at(7))
-        .map(|(row, col)| (map_to_binary(row, b'B'), map_to_binary(col, b'R')))
-        .map(|(row, col)| row * 8 + col)
+        .map(|line| line.split_at(ROW_BITS))
+        .map(|(row, col)| (map_to_binary(row, b'B') << COL_BITS) + map_to_binary(col, b'R'))
         .inspect(|&id| flags[id] = false)
         .min()
         .unwrap();
