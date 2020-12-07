@@ -81,12 +81,3 @@ pub fn part2(input: &str) -> usize {
         .collect::<HashMap<String, Vec<(usize, String)>>>();
     walk_down(&collections, &("shiny gold".to_string())) - 1
 }
-
-/*
-shiny gold {
- 7,
- 2 * {
-  11
- } => 22,
-} => 29
-*/
