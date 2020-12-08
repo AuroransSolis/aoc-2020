@@ -1,13 +1,32 @@
-use aoc_runner_derive::aoc;
+use aoc_runner_derive::{aoc, aoc_generator};
 
 #[derive(Clone, Copy, Debug)]
-enum Instruction {
+pub enum Instruction {
     Acc(i32),
     Jmp(isize),
     Nop(isize)
 }
 
 impl Instruction {
+    fn from_strs(instr: &str, val: &str) -> Self {
+        match instr {
+            "acc" => Instruction::Acc(val.parse::<i32>().unwrap()),
+            "jmp" => Instruction::Jmp(val.parse::<isize>().unwrap()),
+            "nop" => Instruction::Nop(val.parse::<isize>().unwrap()),
+            _ => panic!(format!("Unknown instruction '{}'", instr)),
+        }
+    }
+
+    fn act(&self, pc: &mut usize, acc: &mut i32) {
+        if let &Instruction::Acc(val) = self {
+            *acc += val;
+        }
+        match self {
+            Instruction::Acc(_) | Instruction::Nop(_) => *pc += 1,
+            Instruction::Jmp(val) => *pc = (*pc as isize + val) as usize,
+        }
+    }
+
     fn is_acc(&self) -> bool {
         match self {
             Instruction::Acc(_) => true,
@@ -24,21 +43,21 @@ impl Instruction {
     }
 }
 
-#[aoc(day8, part1)]
-pub fn part1(input: &str) -> i32 {
-    let mut prog = input
+#[aoc_generator(day8)]
+pub fn input_generator(input: &str) -> Vec<(usize, Instruction)> {
+    input
         .lines()
         .map(|line| {
             let (instr, rest) = line.split_at(3);
             let (_, amt) = rest.split_at(1);
-            match instr {
-                "acc" => (0, Instruction::Acc(amt.parse::<i32>().unwrap())),
-                "jmp" => (0, Instruction::Jmp(amt.parse::<isize>().unwrap())),
-                "nop" => (0, Instruction::Nop(amt.parse::<isize>().unwrap())),
-                _ => panic!(format!("Unknown instruction '{}'", instr)),
-            }
+            (0, Instruction::from_strs(instr, amt))
         })
-        .collect::<Vec<_>>();
+        .collect::<Vec<_>>()
+}
+
+#[aoc(day8, part1)]
+pub fn part1(input: &[(usize, Instruction)]) -> i32 {
+    let mut prog = input.to_vec();
     let mut acc = 0;
     let mut pc = 0;
     loop {
@@ -46,14 +65,7 @@ pub fn part1(input: &str) -> i32 {
         if *exec_count == 1 {
             break;
         } else {
-            match *instr {
-                Instruction::Acc(amt) => {
-                    acc += amt;
-                    pc += 1;
-                },
-                Instruction::Jmp(amt) => pc = (pc as isize + amt) as usize,
-                Instruction::Nop(_) => pc += 1,
-            }
+            instr.act(&mut pc, &mut acc);
             *exec_count += 1;
         }
     }
@@ -61,47 +73,28 @@ pub fn part1(input: &str) -> i32 {
 }
 
 #[aoc(day8, part2)]
-pub fn part2(input: &str) -> i32 {
-    let mut prog = input
-        .lines()
-        .map(|line| {
-            let (instr, rest) = line.split_at(3);
-            let (_, amt) = rest.split_at(1);
-            match instr {
-                "acc" => (0, Instruction::Acc(amt.parse::<i32>().unwrap())),
-                "jmp" => (0, Instruction::Jmp(amt.parse::<isize>().unwrap())),
-                "nop" => (0, Instruction::Nop(amt.parse::<isize>().unwrap())),
-                _ => panic!(format!("Unknown instruction '{}'", instr)),
-            }
-        })
-        .collect::<Vec<_>>();
-    // Do jmp => nop pass
-    for (ind, _) in prog.iter().enumerate().filter(|(_, (_, ins))| !ins.is_acc()) {
-        let mut prog_clone = prog.clone();
-        prog_clone[ind].1.switch_jmp_nop();
+pub fn part2(input: &[(usize, Instruction)]) -> i32 {
+    let mut prog = input.to_vec();
+    for (ind, _) in input.iter().enumerate().filter(|(_, (_, ins))| !ins.is_acc()) {
+        prog[ind].1.switch_jmp_nop();
         let mut acc = 0;
         let mut pc = 0;
         loop {
-            let (exec_count, instr) = &mut prog_clone[pc];
+            let (exec_count, instr) = &mut prog[pc];
             if *exec_count == 1 {
                 break;
             } else {
-                match *instr {
-                    Instruction::Acc(amt) => {
-                        acc += amt;
-                        pc += 1;
-                    },
-                    Instruction::Jmp(amt) => pc = (pc as isize + amt) as usize,
-                    Instruction::Nop(_) => pc += 1,
-                }
+                instr.act(&mut pc, &mut acc);
                 *exec_count += 1;
-                if pc == prog_clone.len() {
+                if pc == prog.len() {
                     return acc;
-                } else if pc > prog_clone.len() {
+                } else if pc > prog.len() {
                     break;
                 }
             }
         }
+        prog.iter_mut().for_each(|(count, _)| *count = 0);
+        prog[ind].1.switch_jmp_nop();
     }
     panic!("No solution found.");
 }
