@@ -103,23 +103,25 @@ pub fn part1(input: &Program) -> i32 {
 
 #[aoc(day8, part2)]
 pub fn part2(input: &Program) -> i32 {
-    let mut program = input.clone();
-    input
+    let mut program_1 = input.clone();
+    let mut program_2 = program_1.clone();
+    program_1.execute_until(|prog| prog.instructions[prog.pc].0, |prog| prog.acc);
+    program_1
         .instructions
-        .iter()
+        .into_iter()
         .enumerate()
-        .filter(|(_, (_, ins))| !ins.is_acc())
+        .filter(|(_, (executed, ins))| *executed && !ins.is_acc())
         .find_map(|(i, _)| {
-            program.instructions[i].1.switch_jmp_nop();
-            let (end_acc, end_pc) = program.execute_until(
+            program_2.instructions[i].1.switch_jmp_nop();
+            let (end_acc, end_pc) = program_2.execute_until(
                 |prog| prog.pc >= input.instructions.len() || prog.instructions[prog.pc].0,
                 |prog| (prog.acc, prog.pc),
             );
             if end_pc == input.instructions.len() {
                 Some(end_acc)
             } else {
-                program.reset();
-                program.instructions[i].1.switch_jmp_nop();
+                program_2.reset();
+                program_2.instructions[i].1.switch_jmp_nop();
                 None
             }
         })
