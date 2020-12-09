@@ -11,20 +11,16 @@ pub fn input_generator(input: &str) -> Vec<usize> {
 #[aoc(day9, part1)]
 pub fn part1(input: &[usize]) -> usize {
     input
-        .iter()
-        .copied()
-        .enumerate()
-        .skip(25)
-        .find(|&(ind, num)| {
-            input[ind - 25..ind - 1]
+        .windows(26)
+        .find(|&window| {
+            !window[0..24]
                 .iter()
                 .copied()
                 .enumerate()
-                .flat_map(|(j, n1)| input[j + 1..ind].iter().copied().map(move |n2| (n1, n2)))
-                .any(|(n1, n2)| n1 + n2 == num)
+                .flat_map(|(ind, n1)| window[ind + 1..25].iter().copied().map(move |n2| (n1, n2)))
+                .any(|(n1, n2)| n1 + n2 == window[25])
         })
-        .unwrap()
-        .1
+        .unwrap()[25]
 }
 
 #[aoc(day9, part2)]
