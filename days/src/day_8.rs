@@ -4,7 +4,7 @@ use aoc_runner_derive::{aoc, aoc_generator};
 pub enum Instruction {
     Acc(i32),
     Jmp(isize),
-    Nop(isize)
+    Nop(isize),
 }
 
 impl Instruction {
@@ -43,58 +43,84 @@ impl Instruction {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct Program {
+    instructions: Vec<(bool, Instruction)>,
+    acc: i32,
+    pc: usize,
+}
+
+impl Program {
+    fn new(instructions: Vec<(bool, Instruction)>) -> Self {
+        Program {
+            instructions,
+            acc: 0,
+            pc: 0,
+        }
+    }
+
+    fn execute_until<F: Fn(&Program) -> bool, T, R: FnOnce(&Program) -> T>(
+        &mut self,
+        until: F,
+        ret: R,
+    ) -> T {
+        while !until(&self) {
+            let pc = self.pc;
+            self.instructions[pc].1.act(&mut self.pc, &mut self.acc);
+            self.instructions[pc].0 = true;
+        }
+        ret(&self)
+    }
+
+    fn reset(&mut self) {
+        self.acc = 0;
+        self.pc = 0;
+        self.instructions
+            .iter_mut()
+            .for_each(|(executed, _)| *executed = false);
+    }
+}
+
 #[aoc_generator(day8)]
-pub fn input_generator(input: &str) -> Vec<(usize, Instruction)> {
-    input
+pub fn input_generator(input: &str) -> Program {
+    let instructions = input
         .lines()
         .map(|line| {
             let (instr, rest) = line.split_at(3);
             let (_, amt) = rest.split_at(1);
-            (0, Instruction::from_strs(instr, amt))
+            (false, Instruction::from_strs(instr, amt))
         })
-        .collect::<Vec<_>>()
+        .collect::<Vec<_>>();
+    Program::new(instructions)
 }
 
 #[aoc(day8, part1)]
-pub fn part1(input: &[(usize, Instruction)]) -> i32 {
-    let mut prog = input.to_vec();
-    let mut acc = 0;
-    let mut pc = 0;
-    loop {
-        let (exec_count, instr) = &mut prog[pc];
-        if *exec_count == 1 {
-            break;
-        } else {
-            instr.act(&mut pc, &mut acc);
-            *exec_count += 1;
-        }
-    }
-    acc
+pub fn part1(input: &Program) -> i32 {
+    let mut program = input.clone();
+    program.execute_until(|prog| prog.instructions[prog.pc].0, |prog| prog.acc)
 }
 
 #[aoc(day8, part2)]
-pub fn part2(input: &[(usize, Instruction)]) -> i32 {
-    let mut prog = input.to_vec();
-    for (ind, _) in input.iter().enumerate().filter(|(_, (_, ins))| !ins.is_acc()) {
-        prog[ind].1.switch_jmp_nop();
-        let mut acc = 0;
-        let mut pc = 0;
-        loop {
-            let (exec_count, instr) = &mut prog[pc];
-            if *exec_count == 1 {
-                break;
+pub fn part2(input: &Program) -> i32 {
+    let mut program = input.clone();
+    input
+        .instructions
+        .iter()
+        .enumerate()
+        .filter(|(_, (_, ins))| !ins.is_acc())
+        .find_map(|(i, _)| {
+            program.instructions[i].1.switch_jmp_nop();
+            let (end_acc, end_pc) = program.execute_until(
+                |prog| prog.pc >= input.instructions.len() || prog.instructions[prog.pc].0,
+                |prog| (prog.acc, prog.pc),
+            );
+            if end_pc == input.instructions.len() {
+                Some(end_acc)
             } else {
-                instr.act(&mut pc, &mut acc);
-                *exec_count += 1;
-                if pc == prog.len() {
-                    return acc;
-                } else if pc > prog.len() {
-                    break;
-                }
+                program.reset();
+                program.instructions[i].1.switch_jmp_nop();
+                None
             }
-        }
-        prog.iter_mut().for_each(|(count, _)| *count = 0);
-        prog[ind].1.switch_jmp_nop();
-    }
-    panic!("No solution found.");
+        })
+        .unwrap()
 }
