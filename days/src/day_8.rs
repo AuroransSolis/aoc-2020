@@ -96,8 +96,9 @@ pub fn input_generator(input: &str) -> Program {
 
 #[aoc(day8, part1)]
 pub fn part1(input: &Program) -> i32 {
-    let mut program = input.clone();
-    program.execute_until(|prog| prog.instructions[prog.pc].0, |prog| prog.acc)
+    input
+        .clone()
+        .execute_until(|prog| prog.instructions[prog.pc].0, |prog| prog.acc)
 }
 
 #[aoc(day8, part2)]
