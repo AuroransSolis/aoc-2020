@@ -26,18 +26,32 @@ pub fn part1(input: &[usize]) -> usize {
 #[aoc(day9, part2)]
 pub fn part2(input: &[usize]) -> usize {
     let invalid = part1(input);
-    (2..input.len())
-        .find_map(|window_size| {
-            input
-                .windows(window_size)
-                .find(|&window| window.iter().sum::<usize>() == invalid)
-                .map(|window| {
-                    window
-                        .iter()
-                        .fold([!0, 0], |[min, max], &n| [min.min(n), max.max(n)])
-                        .iter()
-                        .sum()
-                })
-        })
-        .unwrap()
+    let mut start = 0;
+    let mut end = 2;
+    let mut sum = input[0] + input[1];
+    while sum != invalid {
+        if sum < invalid {
+            if input[end + 1] > invalid {
+                start = end + 2;
+                end = start + 2;
+                sum = input[start] + input[start + 1];
+            } else {
+                sum += input[end];
+                end += 1;
+            }
+        } else if sum > invalid {
+            sum -= input[start];
+            start += 1;
+        }
+    }
+    let mut min = input[start];
+    let mut max = min;
+    for &val in &input[start + 1..end] {
+        if val > max {
+            max = val;
+        } else if min > val {
+            min = val;
+        }
+    }
+    min + max
 }
