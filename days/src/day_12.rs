@@ -1,103 +1,107 @@
 use aoc_runner_derive::aoc;
+use std::ops::{Add, AddAssign, Mul};
+
+#[derive(Clone, Copy)]
+struct Vec2 {
+    y: i32,
+    x: i32,
+}
+
+impl Vec2 {
+    const fn new(y: i32, x: i32) -> Self {
+        Vec2 {
+            y,
+            x
+        }
+    }
+
+    fn rot_ccw(&mut self, amt: i32) {
+        for _ in 0..(amt / 90) % 4 {
+            let tmp = -self.y;
+            self.y = self.x;
+            self.x = tmp;
+        }
+    }
+
+    fn rot_cw(&mut self, amt: i32) {
+        for _ in 0..(amt / 90) % 4 {
+            let tmp = self.y;
+            self.y = -self.x;
+            self.x = tmp;
+        }
+    }
+
+    fn manhattan_dist(&self) -> usize {
+        self.y.abs() as usize + self.x.abs() as usize
+    }
+}
+
+impl Add for Vec2 {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self {
+        Vec2::new(self.y + rhs.y, self.x + rhs.x)
+    }
+}
+
+impl AddAssign for Vec2 {
+    fn add_assign(&mut self, rhs: Self) {
+        self.y += rhs.y;
+        self.x += rhs.x;
+    }
+}
+
+impl Mul<i32> for Vec2 {
+    type Output = Self;
+
+    fn mul(self, rhs: i32) -> Self {
+        Vec2::new(self.y * rhs, self.x * rhs)
+    }
+}
 
 #[aoc(day12, part1)]
 pub fn part1(input: &str) -> usize {
-    let(mut cur_dy, mut cur_dx) = (0, 1);
-    let mut cur_amt;
-    let (mut cur_y, mut cur_x) = (0, 0);
+    let mut ship = Vec2::new(0, 0);
+    let mut facing = Vec2::new(0, 1);
     for line in input.lines() {
         let (dir, amt) = line.split_at(1);
-        cur_amt = amt.parse::<i32>().unwrap();
-        let mut not_rot = false;
-        let (tmp_dy, tmp_dx) = match dir {
-            "N" => {
-                not_rot = true;
-                (1, 0)
-            },
-            "S" => {
-                not_rot = true;
-                (-1, 0)
-            },
-            "E" => {
-                not_rot = true;
-                (0, 1)
-            },
-            "W" => {
-                not_rot = true;
-                (0, -1)
-            },
-            "L" => {
-                for _ in 0..cur_amt / 90 {
-                    let tmp = -cur_dy;
-                    cur_dy = cur_dx;
-                    cur_dx = tmp;
-                }
-                (cur_dy, cur_dx)
-            }
-            "R" => {
-                for _ in 0..cur_amt / 90 {
-                    let tmp = cur_dy;
-                    cur_dy = -cur_dx;
-                    cur_dx = tmp;
-                }
-                (cur_dy, cur_dx)
-            }
-            "F" => {
-                not_rot = true;
-                (cur_dy, cur_dx)
-            },
-            _ => continue,
-        };
-        if not_rot {
-            cur_y += cur_amt * tmp_dy;
-            cur_x += cur_amt * tmp_dx;
+        let amt = amt.parse::<i32>().unwrap();
+        if dir == "L" {
+            facing.rot_ccw(amt);
+        } else if dir == "R" {
+            facing.rot_cw(amt);
+        } else {
+            let delta = match dir {
+                "N" => Vec2::new(1, 0),
+                "S" => Vec2::new(-1, 0),
+                "E" => Vec2::new(0, 1),
+                "W" => Vec2::new(0, -1),
+                "F" => facing,
+                _ => continue,
+            };
+            ship += delta * amt;
         }
     }
-    cur_y.abs() as usize + cur_x.abs() as usize
+    ship.manhattan_dist()
 }
 
 #[aoc(day12, part2)]
 pub fn part2(input: &str) -> usize {
-    let mut ship_y = 0;
-    let mut ship_x = 0;
-    let mut wp_y = 1;
-    let mut wp_x = 10;
+    let mut ship = Vec2::new(0, 0);
+    let mut waypoint = Vec2::new(1, 10);
     for line in input.lines() {
         let (dir, amt) = line.split_at(1);
         let amt = amt.parse::<i32>().unwrap();
         match dir {
-            "N" => {
-                wp_y += amt;
-            },
-            "S" => {
-                wp_y -= amt;
-            },
-            "E" => {
-                wp_x += amt;
-            },
-            "W" => {
-                wp_x -= amt;
-            },
-            "L" => {
-                for _ in 0..amt / 90 {
-                    let tmp = -wp_y;
-                    wp_y = wp_x;
-                    wp_x = tmp;
-                }
-            }
-            "R" => {
-                for _ in 0..amt / 90 {
-                    let tmp = wp_y;
-                    wp_y = -wp_x;
-                    wp_x = tmp;
-                }
-            }
-            "F" => {
-                ship_y += amt * wp_y;
-                ship_x += amt * wp_x;
-            },
+            "N" => waypoint += Vec2::new(1, 0) * amt,
+            "S" => waypoint += Vec2::new(-1, 0) * amt,
+            "E" => waypoint += Vec2::new(0, 1) * amt,
+            "W" => waypoint += Vec2::new(0, -1) * amt,
+            "L" => waypoint.rot_ccw(amt),
+            "R" => waypoint.rot_cw(amt),
+            "F" => ship += waypoint * amt,
             _ => {},
         };
     }
-    ship_y.abs() as usize + ship_x.abs() as usize
+    ship.manhattan_dist()
 }
