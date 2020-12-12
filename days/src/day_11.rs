@@ -1,166 +1,162 @@
-use aoc_runner_derive::aoc;
+use aoc_runner_derive::{aoc, aoc_generator};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-enum Position {
+pub enum Position {
     Occupied,
     Empty,
     Floor,
 }
 
 impl Position {
-    fn is_occupied(&self) -> bool {
-        match self {
-            Position::Occupied => true,
-            _ => false,
-        }
-    }
-
-    fn is_empty(&self) -> bool {
-        match self {
-            Position::Empty => true,
-            _ => false,
-        }
-    }
-
-    fn is_floor(&self) -> bool {
-        match self {
-            Position::Floor => true,
-            _ => false,
-        }
+    fn flip(&mut self) {
+        *self = match self {
+            Position::Occupied => Position::Empty,
+            Position::Empty => Position::Occupied,
+            _ => *self,
+        };
     }
 }
 
-fn do_sim_step_p1(sim: &[Vec<Position>]) -> Vec<Vec<Position>> {
-    let mut new = Vec::with_capacity(sim.len());
-    for row in 0..sim.len() {
-        let mut row_list = Vec::with_capacity(sim[row].len());
-        for col in 0..sim[row].len() {
-            if !sim[row][col].is_floor() {
-                let adjacent_occupied = (-1..=1)
-                    .flat_map(|dy| (-1..=1).map(move |dx| (dy, dx)))
-                    .filter(|&delta| delta != (0, 0))
-                    .map(|(dy, dx)| ((row as isize + dy) as usize, (col as isize + dx) as usize))
-                    .filter_map(|(y, x)| sim.get(y).map(|row| row.get(x)))
-                    .filter_map(|from_row| from_row)
-                    .filter(|position| position.is_occupied())
-                    .count();
-                if sim[row][col].is_occupied() && adjacent_occupied > 3 {
-                    row_list.push(Position::Empty);
-                } else if sim[row][col].is_empty() && adjacent_occupied == 0 {
-                    row_list.push(Position::Occupied)
-                } else {
-                    row_list.push(sim[row][col]);
-                }
-            } else {
-                row_list.push(Position::Floor);
-            }
-        }
-        new.push(row_list);
-    }
-    new
+const EIGHT_DIRS: [(isize, isize); 8] = [
+    (0, 1),
+    (1, 1),
+    (1, 0),
+    (1, -1),
+    (0, -1),
+    (-1, -1),
+    (-1, 0),
+    (-1, 1),
+];
+
+fn y_x_flip_pos<'a>(
+    sim: &'a [Vec<Position>],
+    flips: &'a mut [Vec<bool>],
+) -> impl Iterator<Item = (usize, usize, &'a mut bool, Position)> + 'a {
+    flips
+        .iter_mut()
+        .enumerate()
+        .flat_map(|(y, row)| {
+            row.iter_mut()
+                .enumerate()
+                .map(move |(x, flip)| (y, x, flip))
+        })
+        .map(move |(y, x, flip)| (y, x, flip, sim[y][x]))
+}
+
+fn coords_within_lims(y_lim: usize, x_lim: usize, y: isize, x: isize) -> bool {
+    y >= 0 && y_lim as isize > y && x >= 0 && x_lim as isize > x
+}
+
+#[aoc_generator(day11)]
+fn input_generator(input: &str) -> (Vec<Vec<Position>>, Vec<Vec<bool>>) {
+    let seats = input
+        .lines()
+        .map(|line| {
+            line.chars()
+                .map(|c| match c {
+                    '.' => Position::Floor,
+                    'L' => Position::Empty,
+                    '#' => Position::Occupied,
+                    _ => panic!(format!("Unknown char: {}", c)),
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+    let mut flips = Vec::with_capacity(seats.len());
+    (0..flips.capacity()).for_each(|i| flips.push(vec![false; seats[i].len()]));
+    (seats, flips)
+}
+
+fn sim_step_p1(sim: &[Vec<Position>], flips: &mut [Vec<bool>]) -> bool {
+    let mut needs_flips = false;
+    y_x_flip_pos(sim, flips)
+        .filter(|&(.., spot)| spot != Position::Floor)
+        .for_each(|(y, x, flip, spot)| {
+            let occ_adj = EIGHT_DIRS
+                .iter()
+                .map(|(dy, dx)| (y as isize + dy, x as isize + dx))
+                .filter(|&(y, x)| coords_within_lims(sim.len(), sim[0].len(), y, x))
+                .map(|(y, x)| (y as usize, x as usize))
+                .map(|(y, x)| sim[y][x])
+                .filter(|&position| position == Position::Occupied)
+                .count();
+            *flip = (spot == Position::Occupied && occ_adj > 3)
+                || (spot == Position::Empty && occ_adj == 0);
+            needs_flips |= *flip;
+        });
+    needs_flips
 }
 
 #[aoc(day11, part1)]
-pub fn part1(input: &str) -> usize {
-    let mut seats = input
-        .lines()
-        .map(|line| {
-            line.chars()
-                .map(|c| match c {
-                    '.' => Position::Floor,
-                    'L' => Position::Empty,
-                    '#' => Position::Occupied,
-                    _ => panic!(format!("Unknown char: {}", c)),
-                })
-                .collect::<Vec<_>>()
-        })
-        .collect::<Vec<_>>();
-    loop {
-        let new = do_sim_step_p1(&seats);
-        if new == seats {
-            break;
-        } else {
-            seats = new;
-        }
+pub fn part1((seats, flips): &(Vec<Vec<Position>>, Vec<Vec<bool>>)) -> usize {
+    let mut seats = seats.clone();
+    let mut flips = flips.clone();
+    while sim_step_p1(&seats, &mut flips) {
+        seats
+            .iter_mut()
+            .flat_map(|row| row.iter_mut())
+            .zip(flips.iter().flat_map(|row| row.iter()))
+            .filter(|&(_, &flip)| flip)
+            .for_each(|(spot, _)| spot.flip());
     }
     seats
         .into_iter()
         .flat_map(|row| row.into_iter())
-        .filter(|pos| pos.is_occupied())
+        .filter(|&pos| pos == Position::Occupied)
         .count()
 }
 
-fn do_sim_step_p2(sim: &[Vec<Position>]) -> Vec<Vec<Position>> {
-    let mut new = Vec::with_capacity(sim.len());
-    for row in 0..sim.len() {
-        let mut row_list = Vec::with_capacity(sim[row].len());
-        for col in 0..sim[row].len() {
-            if !sim[row][col].is_floor() {
-                let adjacent_occupied = (-1..=1)
-                    .flat_map(|dy| (-1..=1).map(move |dx| (dy, dx)))
-                    .filter(|&delta| delta != (0, 0))
+fn sim_step_p2(sim: &[Vec<Position>], flips: &mut [Vec<bool>]) -> bool {
+    y_x_flip_pos(sim, flips)
+        .map(|(y, x, flip, spot)| {
+            (
+                flip,
+                spot,
+                EIGHT_DIRS
+                    .iter()
                     .map(|(dy, dx)| {
-                        let res = (1..)
+                        (1..)
                             .map(move |mul| (dy * mul, dx * mul))
-                            .take_while(|(dy, dx): &(isize, isize)| {
-                                row as isize + dy >= 0
-                                    && ((row as isize + dy) as usize) < sim.len()
-                                    && col as isize + dx >= 0
-                                    && ((col as isize + dx) as usize) < sim[row].len()
-                            })
-                            .map(|(dy, dx)| {
-                                ((row as isize + dy) as usize, (col as isize + dx) as usize)
-                            })
+                            .map(|(dy, dx)| (y as isize + dy, x as isize + dx))
+                            .take_while(|&(y, x)| coords_within_lims(sim.len(), sim[0].len(), y, x))
+                            .map(|(y, x)| (y as usize, x as usize))
                             .map(|(y, x)| sim[y][x])
-                            .find(|pos| !pos.is_floor())
-                            .map(|pos| pos.is_occupied())
-                            .unwrap_or(false);
-                        res
+                            .find(|&position| position != Position::Floor)
+                            .map(|position| position == Position::Occupied)
+                            .unwrap_or(false)
                     })
-                    .filter(|&has_occupied| has_occupied)
-                    .count();
-                if sim[row][col].is_occupied() && adjacent_occupied > 4 {
-                    row_list.push(Position::Empty);
-                } else if sim[row][col].is_empty() && adjacent_occupied == 0 {
-                    row_list.push(Position::Occupied)
-                } else {
-                    row_list.push(sim[row][col]);
-                }
-            } else {
-                row_list.push(Position::Floor);
-            }
-        }
-        new.push(row_list);
-    }
-    new
+                    .filter(|&occ_in_dir| occ_in_dir)
+                    .count(),
+            )
+        })
+        .map(|(flip, spot, occ_adj)| {
+            (
+                flip,
+                (spot == Position::Occupied && occ_adj > 4)
+                    || (spot == Position::Empty && occ_adj == 0),
+            )
+        })
+        .map(|(flip, needs_flip)| (*flip = needs_flip, needs_flip))
+        .fold(false, |needs_flips, (_, needs_flip)| {
+            needs_flips || needs_flip
+        })
 }
 
 #[aoc(day11, part2)]
-pub fn part2(input: &str) -> usize {
-    let mut seats = input
-        .lines()
-        .map(|line| {
-            line.chars()
-                .map(|c| match c {
-                    '.' => Position::Floor,
-                    'L' => Position::Empty,
-                    '#' => Position::Occupied,
-                    _ => panic!(format!("Unknown char: {}", c)),
-                })
-                .collect::<Vec<_>>()
-        })
-        .collect::<Vec<_>>();
-    loop {
-        let new = do_sim_step_p2(&seats);
-        if new == seats {
-            break;
-        } else {
-            seats = new;
-        }
+pub fn part2((seats, flips): &(Vec<Vec<Position>>, Vec<Vec<bool>>)) -> usize {
+    let mut seats = seats.clone();
+    let mut flips = flips.clone();
+    while sim_step_p2(&seats, &mut flips) {
+        seats
+            .iter_mut()
+            .flat_map(|row| row.iter_mut())
+            .zip(flips.iter().flat_map(|row| row.iter()))
+            .filter(|&(_, &flip)| flip)
+            .for_each(|(spot, _)| spot.flip());
     }
     seats
         .into_iter()
         .flat_map(|row| row.into_iter())
-        .filter(|pos| pos.is_occupied())
+        .filter(|&pos| pos == Position::Occupied)
         .count()
 }
