@@ -68,23 +68,33 @@ fn input_generator(input: &str) -> (Vec<Vec<Position>>, Vec<Vec<bool>>) {
 }
 
 fn sim_step_p1(sim: &[Vec<Position>], flips: &mut [Vec<bool>]) -> bool {
-    let mut needs_flips = false;
     y_x_flip_pos(sim, flips)
         .filter(|&(.., spot)| spot != Position::Floor)
-        .for_each(|(y, x, flip, spot)| {
-            let occ_adj = EIGHT_DIRS
-                .iter()
-                .map(|(dy, dx)| (y as isize + dy, x as isize + dx))
-                .filter(|&(y, x)| coords_within_lims(sim.len(), sim[0].len(), y, x))
-                .map(|(y, x)| (y as usize, x as usize))
-                .map(|(y, x)| sim[y][x])
-                .filter(|&position| position == Position::Occupied)
-                .count();
-            *flip = (spot == Position::Occupied && occ_adj > 3)
-                || (spot == Position::Empty && occ_adj == 0);
-            needs_flips |= *flip;
-        });
-    needs_flips
+        .map(|(y, x, flip, spot)| {
+            (
+                flip,
+                spot,
+                EIGHT_DIRS
+                    .iter()
+                    .map(|(dy, dx)| (y as isize + dy, x as isize + dx))
+                    .filter(|&(y, x)| coords_within_lims(sim.len(), sim[0].len(), y, x))
+                    .map(|(y, x)| (y as usize, x as usize))
+                    .map(|(y, x)| sim[y][x])
+                    .filter(|&position| position == Position::Occupied)
+                    .count(),
+            )
+        })
+        .map(|(flip, spot, occ_adj)| {
+            (
+                flip,
+                (spot == Position::Occupied && occ_adj > 3)
+                    || (spot == Position::Empty && occ_adj == 0),
+            )
+        })
+        .map(|(flip, needs_flip)| (*flip = needs_flip, needs_flip))
+        .fold(false, |needs_flips, (_, needs_flip)| {
+            needs_flips || needs_flip
+        })
 }
 
 #[aoc(day11, part1)]
