@@ -1,4 +1,5 @@
 use aoc_runner_derive::aoc;
+use voracious_radix_sort::RadixSort;
 
 #[aoc(day10, part1)]
 pub fn part1(input: &str) -> usize {
@@ -6,7 +7,7 @@ pub fn part1(input: &str) -> usize {
         .lines()
         .map(|line| line.parse::<usize>().unwrap())
         .collect::<Vec<_>>();
-    input.sort_unstable();
+    input.voracious_sort();
     let mut diffs =
         input
             .windows(2)
@@ -53,7 +54,7 @@ pub fn part2(input: &str) -> usize {
         .inspect(|&val| max = max.max(val))
         .collect::<HashSet<_>>();
     let mut cache = HashMap::with_capacity(input.len());
-    (1..3)
-        .map(|start| poss_followers(&mut cache, &input, start, max))
-        .sum::<usize>()
+    poss_followers(&mut cache, &input, 1, max)
+        + poss_followers(&mut cache, &input, 2, max)
+        + poss_followers(&mut cache, &input, 3, max)
 }
