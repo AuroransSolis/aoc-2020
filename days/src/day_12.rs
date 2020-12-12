@@ -9,10 +9,7 @@ struct Vec2 {
 
 impl Vec2 {
     const fn new(y: i32, x: i32) -> Self {
-        Vec2 {
-            y,
-            x
-        }
+        Vec2 { y, x }
     }
 
     fn rot_ccw(&mut self, amt: i32) {
@@ -100,7 +97,7 @@ pub fn part2(input: &str) -> usize {
             "L" => waypoint.rot_ccw(amt),
             "R" => waypoint.rot_cw(amt),
             "F" => ship += waypoint * amt,
-            _ => {},
+            _ => {}
         };
     }
     ship.manhattan_dist()
