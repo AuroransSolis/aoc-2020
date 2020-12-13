@@ -12,7 +12,7 @@ impl Vec2 {
         Vec2 { y, x }
     }
 
-    fn rot_ccw(&mut self, amt: i32) {
+    fn rot_acw(&mut self, amt: i32) {
         for _ in 0..(amt / 90) % 4 {
             let tmp = -self.y;
             self.y = self.x;
@@ -64,7 +64,7 @@ pub fn part1(input: &str) -> usize {
         let (dir, amt) = line.split_at(1);
         let amt = amt.parse::<i32>().unwrap();
         if dir == "L" {
-            facing.rot_ccw(amt);
+            facing.rot_acw(amt);
         } else if dir == "R" {
             facing.rot_cw(amt);
         } else {
@@ -94,7 +94,7 @@ pub fn part2(input: &str) -> usize {
             "S" => waypoint += Vec2::new(-1, 0) * amt,
             "E" => waypoint += Vec2::new(0, 1) * amt,
             "W" => waypoint += Vec2::new(0, -1) * amt,
-            "L" => waypoint.rot_ccw(amt),
+            "L" => waypoint.rot_acw(amt),
             "R" => waypoint.rot_cw(amt),
             "F" => ship += waypoint * amt,
             _ => {}
