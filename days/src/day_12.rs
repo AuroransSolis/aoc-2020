@@ -63,20 +63,15 @@ pub fn part1(input: &str) -> usize {
     for line in input.lines() {
         let (dir, amt) = line.split_at(1);
         let amt = amt.parse::<i32>().unwrap();
-        if dir == "L" {
-            facing.rot_acw(amt);
-        } else if dir == "R" {
-            facing.rot_cw(amt);
-        } else {
-            let delta = match dir {
-                "N" => Vec2::new(1, 0),
-                "S" => Vec2::new(-1, 0),
-                "E" => Vec2::new(0, 1),
-                "W" => Vec2::new(0, -1),
-                "F" => facing,
-                _ => continue,
-            };
-            ship += delta * amt;
+        match dir {
+            "N" => ship += Vec2::new(1, 0) * amt,
+            "S" => ship += Vec2::new(-1, 0) * amt,
+            "E" => ship += Vec2::new(0, 1) * amt,
+            "W" => ship += Vec2::new(0, -1) * amt,
+            "F" => ship += facing * amt,
+            "L" => facing.rot_acw(amt),
+            "R" => facing.rot_cw(amt),
+            _ => {}
         }
     }
     ship.manhattan_dist()
