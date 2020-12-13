@@ -18,7 +18,7 @@ pub fn part1(input: &str) -> usize {
 
 #[aoc(day13, part2)]
 pub fn part2(input: &str) -> usize {
-    let ids_and_times = input
+    let mut ids_and_times = input
         .lines()
         .skip(1)
         .next()
@@ -26,19 +26,14 @@ pub fn part2(input: &str) -> usize {
         .split(',')
         .enumerate()
         .filter(|&(_, id)| id != "x")
-        .map(|(time, id)| (id.parse::<usize>().unwrap(), time))
-        .collect::<Vec<_>>();
-    let (first_id, first_offset) = ids_and_times[0];
-    let mut value = first_id + first_offset;
-    let mut increment = first_id;
-    let mut ind = 0;
-    while ind + 1 < ids_and_times.len() {
-        let (id, residue) = ids_and_times[ind + 1];
+        .map(|(time, id)| (id.parse::<usize>().unwrap(), time));
+    let mut value = ids_and_times.next().unwrap().0;
+    let mut increment = value;
+    for (id, residue) in ids_and_times {
         while (value + residue) % id != 0 {
             value += increment;
         }
         increment *= id;
-        ind += 1;
     }
     value
 }
